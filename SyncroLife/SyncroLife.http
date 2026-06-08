@@ -1,0 +1,6 @@
+@SyncroLife_HostAddress = http://localhost:5003
+
+GET {{SyncroLife_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###

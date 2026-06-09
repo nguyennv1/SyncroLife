@@ -5,6 +5,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi;
 using Scalar.AspNetCore;
+using SyncroLife.BackgroundServices;
 using SyncroLife.Data;
 using SyncroLife.Helpers;
 using SyncroLife.Interfaces.Repositories;
@@ -65,6 +66,14 @@ builder.Services.AddScoped<IScheduleTypeService, ScheduleTypeService>();
 
 builder.Services.AddScoped<IScheduleRepository, ScheduleRepository>();
 builder.Services.AddScoped<IScheduleService, ScheduleService>();
+
+builder.Services.AddScoped<IReminderRepository, ReminderRepository>();
+builder.Services.AddScoped<IReminderService, ReminderService>();
+
+builder.Services.AddScoped<INotificationRepository, NotificationRepository>();
+builder.Services.AddScoped<INotificationService, NotificationService>();
+
+builder.Services.AddHostedService<ReminderBackgroundService>();
 
 builder.Services.AddDbContext<SyncroLifeDbContext>(options =>
     options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection")));

@@ -5,6 +5,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi;
 using Scalar.AspNetCore;
+using SyncroLife.AIRecommendation;
 using SyncroLife.BackgroundServices;
 using SyncroLife.Data;
 using SyncroLife.Helpers;
@@ -74,6 +75,10 @@ builder.Services.AddScoped<INotificationRepository, NotificationRepository>();
 builder.Services.AddScoped<INotificationService, NotificationService>();
 
 builder.Services.AddHostedService<ReminderBackgroundService>();
+
+builder.Services.AddScoped<IAiRecommendationRepository, AiRecommendationRepository>();
+
+builder.Services.AddScoped<IRecommendationEngine, RuleBasedRecommendationEngine>();
 
 builder.Services.AddDbContext<SyncroLifeDbContext>(options =>
     options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection")));

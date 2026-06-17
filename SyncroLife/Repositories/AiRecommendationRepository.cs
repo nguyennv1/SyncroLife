@@ -21,6 +21,8 @@ namespace SyncroLife.Repositories
             await _context.SaveChangesAsync();
         }
 
+        
+
         public async Task<AiRecommendation?> GetByIdAsync(Guid recommendationId)
         {
             return await _context.AiRecommendations
@@ -48,6 +50,21 @@ namespace SyncroLife.Repositories
             _context.AiRecommendations.Update(recommendation);
 
             await _context.SaveChangesAsync();
+        }
+
+        public async Task<bool> ExistsRecentAsync(Guid userId, string recommendationType, Guid? scheduleId, Guid? goalId, Guid? habitId, Guid? mealId, Guid? preferenceId)
+        {
+            var yesterday = DateTime.UtcNow.AddHours(-24);
+
+            return await _context.AiRecommendations.AnyAsync(x =>
+                x.UserId == userId &&
+                x.RecommendationType == recommendationType &&
+                x.ScheduleId == scheduleId &&
+                x.GoalId == goalId &&
+                x.HabitId == habitId &&
+                x.MealId == mealId &&
+                x.PreferenceId == preferenceId &&
+                x.CreatedAt >= yesterday);
         }
     }
 }

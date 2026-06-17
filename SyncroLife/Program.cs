@@ -13,6 +13,7 @@ using SyncroLife.Interfaces.Repositories;
 using SyncroLife.Interfaces.Services;
 using SyncroLife.Repositories;
 using SyncroLife.Services;
+using SyncroLife.Services.BackgroundServices;
 using System.Reflection;
 using System.Text;
 
@@ -75,10 +76,20 @@ builder.Services.AddScoped<INotificationRepository, NotificationRepository>();
 builder.Services.AddScoped<INotificationService, NotificationService>();
 
 builder.Services.AddHostedService<ReminderBackgroundService>();
+builder.Services.AddHostedService<RecommendationBackgroundService>();
 
 builder.Services.AddScoped<IAiRecommendationRepository, AiRecommendationRepository>();
 
 builder.Services.AddScoped<IRecommendationEngine, RuleBasedRecommendationEngine>();
+
+builder.Services.AddScoped<IRecommendationService, RecommendationService>();
+
+builder.Services.AddScoped<IMealRepository, MealRepository>();
+builder.Services.AddScoped<IUserDietaryPreferenceRepository, UserDietaryPreferenceRepository>();
+
+builder.Services.AddScoped<IUserDeviceTokenRepository, UserDeviceTokenRepository>();
+
+builder.Services.AddScoped<IUserDeviceTokenService, UserDeviceTokenService>();
 
 builder.Services.AddDbContext<SyncroLifeDbContext>(options =>
     options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection")));

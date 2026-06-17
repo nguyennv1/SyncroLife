@@ -126,5 +126,37 @@ namespace SyncroLife.Services
 
             await _notificationRepository.AddAsync(notification);
         }
+
+        public async Task CreateRecommendationNotificationAsync(AiRecommendation recommendation)
+        {
+            var notification = new Notification
+            {
+                NotificationId = Guid.NewGuid(),
+
+                UserId = recommendation.UserId,
+
+                RecommendationId =
+                       recommendation.RecommendationId,
+
+                Content =
+                       recommendation.Reasoning ??
+                       "Bạn có một gợi ý mới.",
+
+                NotificationType = "ai_recommendation",
+
+                Channel = "in_app",
+
+                Status = "sent",
+
+                IsRead = false,
+
+                SentAt = DateTime.UtcNow,
+
+                CreatedAt = DateTime.UtcNow
+            };
+
+            await _notificationRepository
+                .AddAsync(notification);
+        }
     }
 }

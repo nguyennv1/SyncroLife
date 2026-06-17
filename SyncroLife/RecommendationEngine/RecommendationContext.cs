@@ -12,6 +12,10 @@ namespace SyncroLife.AIRecommendation
 
         public List<Goal> Goals { get; set; } = new();
 
+        public List<Meal> Meals { get; set; } = new();
+
+        public List<DietaryPreference> Preferences { get; set; } = new();
+
         public DateTime CurrentTime { get; set; }
     }
 }

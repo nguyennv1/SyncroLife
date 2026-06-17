@@ -13,6 +13,9 @@
         public Guid? HabitId { get; set; }
 
         public Guid? GoalId { get; set; }
+        public Guid? MealId { get; set; }
+
+        public Guid? PreferenceId { get; set; }
 
         public string? ContextSnapshot { get; set; }
     }

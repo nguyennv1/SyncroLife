@@ -15,5 +15,6 @@ namespace SyncroLife.Interfaces.Services
 
         Task MarkAllAsReadAsync(Guid userId);
         Task CreateReminderNotificationAsync(Reminder reminder);
+        Task CreateRecommendationNotificationAsync(AiRecommendation recommendation);
     }
 }

@@ -18,50 +18,42 @@ namespace SyncroLife.BackgroundServices
         {
             while (!stoppingToken.IsCancellationRequested)
             {
-                Console.WriteLine("ReminderBackgroundService Running...");
                 try
                 {
-                    using var scope =
-                        _scopeFactory.CreateScope();
+                    using var scope = _scopeFactory.CreateScope();
 
-                    var reminderRepository =
-                        scope.ServiceProvider
-                            .GetRequiredService<IReminderRepository>();
+                    var reminderRepository = scope.ServiceProvider.GetRequiredService<IReminderRepository>();
+                    var notificationService = scope.ServiceProvider.GetRequiredService<INotificationService>();
 
-                    var notificationService =
-                        scope.ServiceProvider
-                            .GetRequiredService<INotificationService>();
+                    var reminders = await reminderRepository.GetPendingRemindersAsync(DateTime.UtcNow);
 
-                    var reminders =
-                        await reminderRepository
-                            .GetPendingRemindersAsync(
-                                DateTime.UtcNow);
+                    if (reminders.Count > 0)
+                    {
+                        Console.WriteLine($"Found {reminders.Count} pending reminders.");
+                    }
 
                     foreach (var reminder in reminders)
                     {
                         try
                         {
-                            await notificationService
-                                .CreateReminderNotificationAsync(
-                                    reminder);
+                            await notificationService.CreateReminderNotificationAsync(reminder);
 
                             reminder.IsSent = true;
 
-                            await reminderRepository
-                                .UpdateAsync(reminder);
+                            await reminderRepository.UpdateAsync(reminder);
                         }
-                        catch
+                        catch (Exception ex)
                         {
+                            Console.WriteLine($"Reminder Error: {ex.Message}");
                         }
                     }
                 }
-                catch
+                catch (Exception ex)
                 {
+                    Console.WriteLine($"Reminder Service Error: {ex.Message}");
                 }
 
-                await Task.Delay(
-                    TimeSpan.FromMinutes(1),
-                    stoppingToken);
+                await Task.Delay(TimeSpan.FromMinutes(1), stoppingToken);
             }
         }
     }

@@ -47,6 +47,7 @@ public partial class SyncroLifeDbContext : DbContext
     public virtual DbSet<User> Users { get; set; }
 
     public virtual DbSet<UserDailySchedule> UserDailySchedules { get; set; }
+    public virtual DbSet<UserDeviceToken> UserDeviceTokens { get; set; }
 
     public virtual DbSet<UserDietaryPreference> UserDietaryPreferences { get; set; }
 
@@ -894,6 +895,28 @@ public partial class SyncroLifeDbContext : DbContext
             entity.Property(e => e.Username)
                 .HasMaxLength(100)
                 .HasColumnName("username");
+        });
+
+        modelBuilder.Entity<UserDeviceToken>(entity =>
+        {
+            entity.HasKey(e => e.DeviceTokenId).HasName("user_device_token_pkey");
+
+            entity.ToTable("user_device_token");
+
+            entity.Property(e => e.DeviceTokenId)
+                .ValueGeneratedNever()
+                .HasColumnName("device_token_id");
+            entity.Property(e => e.CreatedAt)
+                .HasDefaultValueSql("now()")
+                .HasColumnType("timestamp without time zone")
+                .HasColumnName("created_at");
+            entity.Property(e => e.FcmToken).HasColumnName("fcm_token");
+            entity.Property(e => e.UserId).HasColumnName("user_id");
+
+            entity.HasOne(d => d.User).WithMany(p => p.UserDeviceTokens)
+                .HasForeignKey(d => d.UserId)
+                .OnDelete(DeleteBehavior.ClientSetNull)
+                .HasConstraintName("fk_user_device_token_user");
         });
 
         modelBuilder.Entity<UserDietaryPreference>(entity =>

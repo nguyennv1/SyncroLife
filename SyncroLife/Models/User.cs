@@ -44,6 +44,7 @@ public partial class User
     public virtual Role Role { get; set; } = null!;
 
     public virtual ICollection<Schedule> Schedules { get; set; } = new List<Schedule>();
+    public virtual ICollection<UserDeviceToken> UserDeviceTokens { get; set; } = new List<UserDeviceToken>();
 
     public virtual ICollection<UserDietaryPreference> UserDietaryPreferences { get; set; } = new List<UserDietaryPreference>();
 

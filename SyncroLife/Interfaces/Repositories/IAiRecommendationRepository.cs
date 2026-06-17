@@ -13,5 +13,6 @@ namespace SyncroLife.Interfaces.Repositories
         Task<AiRecommendation?> GetByIdAsync(Guid recommendationId);
 
         Task UpdateAsync(AiRecommendation recommendation);
+        Task<bool> ExistsRecentAsync(Guid userId, string recommendationType, Guid? scheduleId, Guid? goalId, Guid? habitId, Guid? mealId, Guid? preferenceId);
     }
 }

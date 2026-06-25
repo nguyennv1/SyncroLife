@@ -1,4 +1,4 @@
-﻿namespace SyncroLife.DTOs.Goal
+namespace SyncroLife.DTOs.Goal
 {
     public class UpdateGoalDTO
     {
@@ -7,6 +7,8 @@
         public string GoalName { get; set; } = null!;
 
         public decimal? TargetValue { get; set; }
+
+        public decimal? CurrentValue { get; set; }
 
         public string? Unit { get; set; }
 

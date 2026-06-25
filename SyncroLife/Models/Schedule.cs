@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 
 namespace SyncroLife.Models;
@@ -28,6 +28,8 @@ public partial class Schedule
     public DateTime? CreatedAt { get; set; }
 
     public DateTime? UpdatedAt { get; set; }
+
+    public string? GoogleEventId { get; set; }
 
     public virtual ICollection<AiRecommendation> AiRecommendations { get; set; } = new List<AiRecommendation>();
 

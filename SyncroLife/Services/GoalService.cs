@@ -1,4 +1,4 @@
-﻿using SyncroLife.DTOs.Goal;
+using SyncroLife.DTOs.Goal;
 using SyncroLife.Interfaces.Repositories;
 using SyncroLife.Interfaces.Services;
 using SyncroLife.Models;
@@ -162,6 +162,13 @@ namespace SyncroLife.Services
             goal.GoalName = request.GoalName;
 
             goal.TargetValue = request.TargetValue;
+
+            goal.CurrentValue = request.CurrentValue ?? 0;
+
+            if (goal.TargetValue > 0)
+            {
+                goal.ProgressPercentage = (int)((goal.CurrentValue / goal.TargetValue) * 100);
+            }
 
             goal.Unit = request.Unit;
 

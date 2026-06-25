@@ -18,6 +18,7 @@ using System.Reflection;
 using System.Text;
 
 var builder = WebApplication.CreateBuilder(args);
+builder.Services.Configure<GeminiSettings>(builder.Configuration.GetSection("GeminiSettings"));
 
 var jwtSettings = builder.Configuration.GetSection("JwtSettings");
 var secretKey = jwtSettings["SecretKey"] ?? throw new InvalidOperationException("JWT SecretKey is missing");
@@ -44,9 +45,48 @@ builder.Services.AddAuthentication(options =>
         RoleClaimType = "role",
         NameClaimType = "name"
     };
+
+    options.Events = new JwtBearerEvents
+    {
+        OnTokenValidated = context =>
+        {
+            var identity = context.Principal?.Identity as System.Security.Claims.ClaimsIdentity;
+            if (identity != null)
+            {
+                // Duplicate "sub" as ClaimTypes.NameIdentifier so both FindFirst("sub") and FindFirst(ClaimTypes.NameIdentifier) work.
+                var subClaim = identity.FindFirst("sub");
+                if (subClaim != null && !identity.HasClaim(c => c.Type == System.Security.Claims.ClaimTypes.NameIdentifier))
+                {
+                    identity.AddClaim(new System.Security.Claims.Claim(System.Security.Claims.ClaimTypes.NameIdentifier, subClaim.Value));
+                }
+
+                // Duplicate "role" as ClaimTypes.Role to support standard Role checks.
+                var roleClaim = identity.FindFirst("role");
+                if (roleClaim != null && !identity.HasClaim(c => c.Type == System.Security.Claims.ClaimTypes.Role))
+                {
+                    identity.AddClaim(new System.Security.Claims.Claim(System.Security.Claims.ClaimTypes.Role, roleClaim.Value));
+                }
+            }
+            return Task.CompletedTask;
+        }
+    };
 });
 
 builder.Services.AddControllers();
+
+// CORS: Allow Flutter Web app running on any localhost port (and all origins for development).
+// ⚠️  Restrict origins before deploying to production.
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("AllowFlutterWeb", policy =>
+    {
+        policy
+            .SetIsOriginAllowed(_ => true)   // allow any localhost port
+            .AllowAnyHeader()
+            .AllowAnyMethod()
+            .AllowCredentials();
+    });
+});
 
 builder.Services.AddScoped<IAuthRepository, AuthRepository>();
 builder.Services.AddScoped<IAuthService, AuthService>();
@@ -54,6 +94,7 @@ builder.Services.AddScoped<JwtHelper>();
 
 builder.Services.AddScoped<IUserRepository, UserRepository>();
 builder.Services.AddScoped<IUserService, UserService>();
+builder.Services.AddScoped<IGoogleCalendarService, GoogleCalendarService>();
 
 builder.Services.AddScoped<IGoalRepository, GoalRepository>();
 builder.Services.AddScoped<IGoalService, GoalService>();
@@ -80,7 +121,7 @@ builder.Services.AddHostedService<RecommendationBackgroundService>();
 
 builder.Services.AddScoped<IAiRecommendationRepository, AiRecommendationRepository>();
 
-builder.Services.AddScoped<IRecommendationEngine, RuleBasedRecommendationEngine>();
+builder.Services.AddScoped<IRecommendationEngine, GeminiRecommendationEngine>();
 
 builder.Services.AddScoped<IRecommendationService, RecommendationService>();
 
@@ -90,6 +131,14 @@ builder.Services.AddScoped<IUserDietaryPreferenceRepository, UserDietaryPreferen
 builder.Services.AddScoped<IUserDeviceTokenRepository, UserDeviceTokenRepository>();
 
 builder.Services.AddScoped<IUserDeviceTokenService, UserDeviceTokenService>();
+
+builder.Services.AddHttpClient();
+builder.Services.Configure<GeminiSettings>(builder.Configuration.GetSection("GeminiSettings"));
+builder.Services.AddHttpClient<IGeminiService, GeminiService>();
+
+builder.Services.AddScoped<IFoodAnalysisRepository, FoodAnalysisRepository>();
+
+builder.Services.AddScoped<IFoodAnalysisService, FoodAnalysisService>();
 
 builder.Services.AddDbContext<SyncroLifeDbContext>(options =>
     options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection")));
@@ -144,14 +193,20 @@ builder.Services.AddOpenApi(options =>
 
 var app = builder.Build();
 
+
 if (app.Environment.IsDevelopment())
 {
     app.UseDeveloperExceptionPage();
-    app.MapOpenApi();
-    app.MapScalarApiReference();
 }
 
+// Always map API docs so they are accessible in the production environment for demo/testing
+app.MapOpenApi();
+app.MapScalarApiReference();
+
 app.UseHttpsRedirection();
+
+// Enable CORS before routing/auth so preflight OPTIONS requests are handled correctly.
+app.UseCors("AllowFlutterWeb");
 
 app.UseExceptionHandler(errorApp =>
 {
@@ -175,9 +230,12 @@ app.UseExceptionHandler(errorApp =>
 
 app.UseRouting();
 
-app.MapControllers();
-
 app.UseAuthentication();
 app.UseAuthorization();
+
+app.MapControllers();
+
+// Redirect root URL to Scalar API docs so users don't see a 404 page
+app.MapGet("/", () => Results.Redirect("/scalar/v1"));
 
 app.Run();

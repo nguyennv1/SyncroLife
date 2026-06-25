@@ -1,4 +1,4 @@
-﻿using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc;
 using SyncroLife.DTOs.Auth;
 using SyncroLife.Interfaces.Services;
 
@@ -43,6 +43,20 @@ public class AuthController : ControllerBase
         catch (Exception ex)
         {
             return BadRequest(ex.Message);
+        }
+    }
+
+    [HttpPost("google-login")]
+    public async Task<IActionResult> GoogleLogin(GoogleLoginRequestDTO request)
+    {
+        try
+        {
+            var result = await _authService.GoogleLoginAsync(request);
+            return Ok(result);
+        }
+        catch (Exception ex)
+        {
+            return BadRequest(new { message = ex.Message });
         }
     }
 }

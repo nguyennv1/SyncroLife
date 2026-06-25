@@ -1,4 +1,4 @@
-﻿using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore;
 using SyncroLife.Data;
 using SyncroLife.Interfaces.Repositories;
 using SyncroLife.Models;
@@ -33,6 +33,20 @@ public class AuthRepository : IAuthRepository
         {
             throw new Exception(ex.InnerException?.Message ?? ex.Message);
         }
+    }
+
+    public async Task<User?> GetByGoogleIdAsync(string googleId)
+    {
+        return await _context.Users
+            .Include(x => x.Role)
+            .FirstOrDefaultAsync(x => x.GoogleId == googleId);
+    }
+
+    public async Task<User> UpdateUserAsync(User user)
+    {
+        _context.Users.Update(user);
+        await _context.SaveChangesAsync();
+        return user;
     }
 
     public async Task<Role?> GetRoleByNameAsync(string roleName)

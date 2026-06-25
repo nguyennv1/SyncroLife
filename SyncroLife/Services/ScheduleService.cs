@@ -1,4 +1,4 @@
-﻿using SyncroLife.DTOs.Schedule;
+using SyncroLife.DTOs.Schedule;
 using SyncroLife.Interfaces.Repositories;
 using SyncroLife.Interfaces.Services;
 using SyncroLife.Models;
@@ -194,9 +194,9 @@ namespace SyncroLife.Services
             return true;
         }
 
-        public async Task<List<ScheduleResponseDTO>> GetTodaySchedulesAsync(Guid userId)
+        public async Task<List<ScheduleResponseDTO>> GetTodaySchedulesAsync(Guid userId, int? timezoneOffset = null)
         {
-            var schedules = await _scheduleRepository.GetTodaySchedulesAsync(userId);
+            var schedules = await _scheduleRepository.GetTodaySchedulesAsync(userId, timezoneOffset);
 
             return schedules.Select(x => new ScheduleResponseDTO
             {
@@ -213,9 +213,9 @@ namespace SyncroLife.Services
             }).ToList();
         }
 
-        public async Task<List<ScheduleResponseDTO>> GetSchedulesByDateAsync(Guid userId, DateTime date)
+        public async Task<List<ScheduleResponseDTO>> GetSchedulesByDateAsync(Guid userId, DateTime date, int? timezoneOffset = null)
         {
-            var schedules = await _scheduleRepository.GetSchedulesByDateAsync(userId, date);
+            var schedules = await _scheduleRepository.GetSchedulesByDateAsync(userId, date, timezoneOffset);
 
             return schedules.Select(x => new ScheduleResponseDTO
             {

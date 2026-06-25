@@ -1,4 +1,4 @@
-﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using SyncroLife.DTOs.User;
 using SyncroLife.Interfaces.Services;
@@ -16,7 +16,7 @@ public class UserController : ControllerBase
         _userService = userService;
     }
 
-    [HttpGet("user-details{userId}")]
+    [HttpGet("user-details/{userId}")]
     public async Task<IActionResult> GetProfile(Guid userId)
     {
         var result =
@@ -25,7 +25,7 @@ public class UserController : ControllerBase
         return Ok(result);
     }
 
-    [HttpPut("update-user{userId}")]
+    [HttpPut("update-user/{userId}")]
     public async Task<IActionResult> UpdateProfile(
         Guid userId,
         UpdateProfileDTO request)

@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 
 namespace SyncroLife.Models;
@@ -13,7 +13,7 @@ public partial class User
 
     public string? Email { get; set; }
 
-    public string PasswordHash { get; set; } = null!;
+    public string? PasswordHash { get; set; }
 
     public string? FullName { get; set; }
 
@@ -28,6 +28,36 @@ public partial class User
     public DateTime? CreatedAt { get; set; }
 
     public DateTime? UpdatedAt { get; set; }
+
+    public string? GoogleId { get; set; }
+
+    public string? GoogleAccessToken { get; set; }
+
+    public string? GoogleRefreshToken { get; set; }
+
+    public DateTime? GoogleTokenExpiresAt { get; set; }
+
+    public decimal? Height { get; set; }
+
+    public decimal? Weight { get; set; }
+
+    public int? TargetCalories { get; set; }
+
+    public decimal? MonthlyBudget { get; set; }
+
+    [System.ComponentModel.DataAnnotations.Schema.NotMapped]
+    public string? Allergies
+    {
+        get
+        {
+            if (UserDietaryPreferences == null) return null;
+            var list = UserDietaryPreferences
+                .Where(udp => udp.Preference != null && udp.Preference.IsDeleted != true && udp.Preference.IsActive == true)
+                .Select(udp => udp.Preference.PreferenceName)
+                .ToList();
+            return list.Any() ? string.Join(",", list) : null;
+        }
+    }
 
     public virtual ICollection<AiRecommendation> AiRecommendations { get; set; } = new List<AiRecommendation>();
 

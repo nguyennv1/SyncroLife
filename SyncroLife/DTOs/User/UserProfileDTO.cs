@@ -1,4 +1,4 @@
-﻿namespace SyncroLife.DTOs.User;
+namespace SyncroLife.DTOs.User;
 
 public class UserProfileDTO
 {
@@ -15,4 +15,14 @@ public class UserProfileDTO
     public string? Gender { get; set; }
 
     public string RoleName { get; set; } = null!;
+
+    public decimal? Height { get; set; }
+
+    public decimal? Weight { get; set; }
+
+    public int? TargetCalories { get; set; }
+
+    public decimal? MonthlyBudget { get; set; }
+
+    public string? Allergies { get; set; }
 }

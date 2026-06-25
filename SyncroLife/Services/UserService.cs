@@ -1,4 +1,4 @@
-﻿using SyncroLife.DTOs.User;
+using SyncroLife.DTOs.User;
 using SyncroLife.Interfaces.Repositories;
 using SyncroLife.Interfaces.Services;
 
@@ -24,7 +24,7 @@ public class UserService : IUserService
             Username = u.Username,
             Email = u.Email,
             FullName = u.FullName,
-            Gender = u.Gender,
+            Gender = u.Gender == "M" ? "Male" : (u.Gender == "F" ? "Female" : u.Gender),
             DateOfBirth = u.DateOfBirth,
             Role = u.Role.RoleName,
             IsDeleted = u.IsDeleted ?? false
@@ -44,11 +44,15 @@ public class UserService : IUserService
         {
             UserId = user.UserId,
             Username = user.Username,
-            //Email = user.Email,
             FullName = user.FullName,
             DateOfBirth = user.DateOfBirth,
-            Gender = user.Gender,
-            RoleName = user.Role.RoleName
+            Gender = user.Gender == "M" ? "Male" : (user.Gender == "F" ? "Female" : user.Gender),
+            RoleName = user.Role.RoleName,
+            Height = user.Height,
+            Weight = user.Weight,
+            TargetCalories = user.TargetCalories,
+            MonthlyBudget = user.MonthlyBudget,
+            Allergies = user.Allergies
         };
     }
 
@@ -63,12 +67,34 @@ public class UserService : IUserService
             throw new Exception("User not found");
         }
 
-        //user.Email = request.Email;
+        string? mappedGender = null;
+        if (!string.IsNullOrEmpty(request.Gender))
+        {
+            var g = request.Gender.Trim().ToLower();
+            if (g == "male" || g == "m" || g == "nam")
+            {
+                mappedGender = "M";
+            }
+            else if (g == "female" || g == "f" || g == "nữ")
+            {
+                mappedGender = "F";
+            }
+            else
+            {
+                mappedGender = request.Gender.Length > 0 ? request.Gender.Substring(0, 1).ToUpper() : null;
+            }
+        }
+
         user.FullName = request.FullName;
         user.DateOfBirth = request.DateOfBirth;
-        user.Gender = request.Gender;
+        user.Gender = mappedGender;
+        user.Height = request.Height;
+        user.Weight = request.Weight;
+        user.TargetCalories = request.TargetCalories;
+        user.MonthlyBudget = request.MonthlyBudget;
 
         await _userRepository.UpdateAsync(user);
+        await _userRepository.UpdateDietaryPreferencesAsync(userId, request.Allergies ?? "");
 
         return await GetProfileAsync(userId);
     }

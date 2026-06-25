@@ -1,4 +1,4 @@
-﻿using System.Security.Claims;
+using System.Security.Claims;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using SyncroLife.DTOs.Schedule;
@@ -86,22 +86,49 @@ namespace SyncroLife.Controllers
         }
 
         [HttpGet("today")]
-        public async Task<IActionResult> GetTodaySchedules()
+        public async Task<IActionResult> GetTodaySchedules([FromQuery] int? timezoneOffset)
         {
             var result = await _scheduleService.GetTodaySchedulesAsync(
-                GetUserId());
+                GetUserId(),
+                timezoneOffset);
 
             return Ok(result);
         }
 
         [HttpGet("date/{date}")]
-        public async Task<IActionResult> GetSchedulesByDate(DateTime date)
+        public async Task<IActionResult> GetSchedulesByDate(DateTime date, [FromQuery] int? timezoneOffset)
         {
             var result = await _scheduleService.GetSchedulesByDateAsync(
                 GetUserId(),
-                date);
+                date,
+                timezoneOffset);
 
             return Ok(result);
+        }
+
+        [HttpPost("sync-google")]
+        public async Task<IActionResult> SyncGoogleCalendar(
+            [FromServices] IGoogleCalendarService googleCalendarService,
+            [FromServices] IRecommendationService recommendationService)
+        {
+            try
+            {
+                var userId = GetUserId();
+                await googleCalendarService.SyncCalendarAsync(userId);
+                try
+                {
+                    await recommendationService.GenerateForUserAsync(userId);
+                }
+                catch (Exception recEx)
+                {
+                    Console.WriteLine($"Error generating recommendations after sync: {recEx.Message}");
+                }
+                return Ok(new { message = "Google Calendar synchronized successfully" });
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(new { message = ex.Message });
+            }
         }
     }
 }

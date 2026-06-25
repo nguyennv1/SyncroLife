@@ -1,4 +1,4 @@
-﻿using SyncroLife.DTOs.Schedule;
+using SyncroLife.DTOs.Schedule;
 
 namespace SyncroLife.Interfaces.Services
 {
@@ -14,8 +14,8 @@ namespace SyncroLife.Interfaces.Services
 
         Task<bool> DeleteScheduleAsync(Guid userId, Guid scheduleId);
 
-        Task<List<ScheduleResponseDTO>> GetTodaySchedulesAsync(Guid userId);
+        Task<List<ScheduleResponseDTO>> GetTodaySchedulesAsync(Guid userId, int? timezoneOffset = null);
 
-        Task<List<ScheduleResponseDTO>> GetSchedulesByDateAsync(Guid userId, DateTime date);
+        Task<List<ScheduleResponseDTO>> GetSchedulesByDateAsync(Guid userId, DateTime date, int? timezoneOffset = null);
     }
 }

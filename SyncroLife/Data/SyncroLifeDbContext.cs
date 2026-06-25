@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using Microsoft.EntityFrameworkCore;
 using SyncroLife.Models;
@@ -742,6 +742,9 @@ public partial class SyncroLifeDbContext : DbContext
                 .HasDefaultValueSql("CURRENT_TIMESTAMP")
                 .HasColumnName("updated_at");
             entity.Property(e => e.UserId).HasColumnName("user_id");
+            entity.Property(e => e.GoogleEventId)
+                .HasMaxLength(255)
+                .HasColumnName("google_event_id");
 
             entity.HasOne(d => d.Type).WithMany(p => p.Schedules)
                 .HasForeignKey(d => d.TypeId)
@@ -833,6 +836,8 @@ public partial class SyncroLifeDbContext : DbContext
 
             entity.HasIndex(e => e.Username, "users_username_key").IsUnique();
 
+            entity.HasIndex(e => e.GoogleId, "users_google_id_key").IsUnique();
+
             entity.Property(e => e.UserId)
                 .HasDefaultValueSql("gen_random_uuid()")
                 .HasColumnName("user_id");
@@ -863,6 +868,32 @@ public partial class SyncroLifeDbContext : DbContext
             entity.Property(e => e.Username)
                 .HasMaxLength(100)
                 .HasColumnName("username");
+
+            entity.Property(e => e.GoogleId)
+                .HasMaxLength(255)
+                .HasColumnName("google_id");
+
+            entity.Property(e => e.GoogleAccessToken)
+                .HasColumnName("google_access_token");
+
+            entity.Property(e => e.GoogleRefreshToken)
+                .HasColumnName("google_refresh_token");
+
+            entity.Property(e => e.GoogleTokenExpiresAt)
+                .HasColumnName("google_token_expires_at");
+
+            entity.Property(e => e.Height)
+                .HasColumnName("height");
+
+            entity.Property(e => e.Weight)
+                .HasColumnName("weight");
+
+            entity.Property(e => e.TargetCalories)
+                .HasColumnName("target_calories");
+
+            entity.Property(e => e.MonthlyBudget)
+                .HasColumnName("monthly_budget");
+
 
             entity.HasOne(d => d.Role).WithMany(p => p.Users)
                 .HasForeignKey(d => d.RoleId)

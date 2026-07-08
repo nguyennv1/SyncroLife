@@ -1044,6 +1044,10 @@ public partial class SyncroLifeDbContext : DbContext
                 .HasDefaultValueSql("CURRENT_TIMESTAMP")
                 .HasColumnName("updated_at");
             entity.Property(e => e.UserId).HasColumnName("user_id");
+            entity.Property(e => e.ScanCount)
+                .HasDefaultValue(0)
+                .HasColumnName("scan_count");
+            entity.Property(e => e.LastScanDate).HasColumnName("last_scan_date");
 
             entity.HasOne(d => d.Plan).WithMany(p => p.UserSubscriptions)
                 .HasForeignKey(d => d.PlanId)

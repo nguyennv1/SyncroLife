@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 
 namespace SyncroLife.Models;
@@ -18,6 +18,10 @@ public partial class UserSubscription
     public string Status { get; set; } = null!;
 
     public bool? AutoRenew { get; set; }
+
+    public int? ScanCount { get; set; }
+
+    public DateTime? LastScanDate { get; set; }
 
     public DateTime? CreatedAt { get; set; }
 

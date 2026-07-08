@@ -1,7 +1,9 @@
-﻿namespace SyncroLife.DTOs.FoodAnalysis
+namespace SyncroLife.DTOs.FoodAnalysis
 {
     public class GeminiFoodResult
     {
+        public bool IsFood { get; set; }
+
         public string FoodName { get; set; } = string.Empty;
 
         public decimal Confidence { get; set; }

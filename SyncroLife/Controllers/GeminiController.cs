@@ -1,16 +1,18 @@
-﻿using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using SyncroLife.Interfaces.Services;
 
 namespace SyncroLife.Controllers
 {
+    [Authorize]
     [Route("api/[controller]")]
     [ApiController]
-    public class GeminiTestController : ControllerBase
+    public class GeminiController : ControllerBase
     {
         private readonly IGeminiService _geminiService;
 
-        public GeminiTestController(
+        public GeminiController(
             IGeminiService geminiService)
         {
             _geminiService = geminiService;

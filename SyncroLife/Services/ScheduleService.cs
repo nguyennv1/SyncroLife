@@ -45,7 +45,9 @@ namespace SyncroLife.Services
                 Title = request.Title,
                 StartTime = request.StartTime.ToUniversalTime(),
                 EndTime = request.EndTime.ToUniversalTime(),
-                Description = request.Description,
+                Description = request.Description != null && request.Description.Length > 500
+                    ? request.Description.Substring(0, 497) + "..."
+                    : request.Description,
                 IsCompleted = false,
                 IsDeleted = false,
                 CreatedAt = DateTime.UtcNow
@@ -151,7 +153,9 @@ namespace SyncroLife.Services
             schedule.Title = request.Title;
             schedule.StartTime = request.StartTime.ToUniversalTime();
             schedule.EndTime = request.EndTime.ToUniversalTime();
-            schedule.Description = request.Description;
+            schedule.Description = request.Description != null && request.Description.Length > 500
+                ? request.Description.Substring(0, 497) + "..."
+                : request.Description;
             schedule.IsCompleted = request.IsCompleted;
             schedule.UpdatedAt = DateTime.UtcNow;
 

@@ -1,4 +1,4 @@
-﻿namespace SyncroLife.DTOs.User;
+namespace SyncroLife.DTOs.User;
 
 public class UserResponseDTO
 {
@@ -14,5 +14,6 @@ public class UserResponseDTO
 
     public DateOnly? DateOfBirth { get; set; }
     public string? Role { get; set; }
+    public string? SubscriptionPlan { get; set; }
     public bool IsDeleted { get; set; }
 }

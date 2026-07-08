@@ -1,4 +1,4 @@
-﻿using Microsoft.Extensions.Options;
+using Microsoft.Extensions.Options;
 using SyncroLife.DTOs.FoodAnalysis;
 using SyncroLife.Helpers;
 using SyncroLife.Interfaces.Services;
@@ -25,32 +25,37 @@ namespace SyncroLife.Services
             var base64Image = Convert.ToBase64String(imageBytes);
 
             var prompt = """
-Analyze this food image.
+Analyze this image.
 
-Identify:
-- food name
-- calories
-- protein
-- carbs
-- fats
-- fiber
-- sodium
+First, determine if the image contains food or a dish.
+If it is NOT food (e.g. it is a person, an object, text, scenery, etc.) or you cannot confidently recognize the food:
+Set "isFood" to false, and leave all other fields empty or 0.
 
-Estimate nutrition values for one serving.
+If it IS food:
+Set "isFood" to true and identify:
+- food name in English (use transliterated English names for Vietnamese local foods, e.g. "pho bo", "banh mi", "com tam")
+- calories (estimate for one serving)
+- protein (estimate for one serving)
+- carbs (estimate for one serving)
+- fats (estimate for one serving)
+- fiber (estimate for one serving)
+- sodium (estimate for one serving)
+- description (brief description in English)
+- aiNotes (a short recommendation about this type of food in English, maximum 1-2 sentences, describing health benefits, best time to eat, or portion advice)
 
-Return ONLY valid JSON.
-
+Return ONLY valid JSON in the following format:
 {
-  "foodName":"",
-  "confidence":0,
-  "calories":0,
-  "protein":0,
-  "carbs":0,
-  "fats":0,
-  "fiber":0,
-  "sodium":0,
-  "description":"",
-  "aiNotes":""
+  "isFood": true,
+  "foodName": "Food name in English",
+  "confidence": 0.95,
+  "calories": 350,
+  "protein": 15,
+  "carbs": 40,
+  "fats": 12,
+  "fiber": 4,
+  "sodium": 300,
+  "description": "Short description of the food and brief instructions on how to make it.",
+  "aiNotes": "A short recommendation about this food in English (1-2 sentences)."
 }
 """;
 
@@ -100,36 +105,55 @@ Return ONLY valid JSON.
 
             if (!response.IsSuccessStatusCode)
             {
-                throw new Exception(responseContent);
+                Console.WriteLine($"Gemini API Error Response: {responseContent}");
+                throw new Exception("An error occurred with the system. Please try again later.");
             }
 
-            var geminiResponse = JsonSerializer.Deserialize<GeminiApiResponse>(responseContent, 
-                new JsonSerializerOptions
-                {
-                    PropertyNameCaseInsensitive = true
-                });
-
-            var jsonText =geminiResponse?.Candidates
-                .FirstOrDefault()?.Content.Parts
-                .FirstOrDefault()?.Text;
-
-            jsonText = jsonText?
-                .Replace("```json", "")
-                .Replace("```", "")
-                .Trim();
-
-            if (string.IsNullOrWhiteSpace(jsonText))
+            try
             {
-                throw new Exception("Gemini returned empty response.");
-            }
+                var geminiResponse = JsonSerializer.Deserialize<GeminiApiResponse>(responseContent, 
+                    new JsonSerializerOptions
+                    {
+                        PropertyNameCaseInsensitive = true
+                    });
 
-            var result = JsonSerializer.Deserialize<GeminiFoodResult>(jsonText,
-                new JsonSerializerOptions
+                var jsonText = geminiResponse?.Candidates
+                    .FirstOrDefault()?.Content.Parts
+                    .FirstOrDefault()?.Text;
+
+                jsonText = jsonText?
+                    .Replace("```json", "")
+                    .Replace("```", "")
+                    .Trim();
+
+                if (string.IsNullOrWhiteSpace(jsonText))
                 {
-                    PropertyNameCaseInsensitive = true
-                });
+                    throw new Exception("Gemini returned empty response.");
+                }
 
-            return result ?? throw new Exception("Unable to parse Gemini response.");
+                var result = JsonSerializer.Deserialize<GeminiFoodResult>(jsonText,
+                    new JsonSerializerOptions
+                    {
+                        PropertyNameCaseInsensitive = true
+                    });
+
+                if (result == null)
+                {
+                    throw new Exception("Unable to parse Gemini response.");
+                }
+
+                if (!result.IsFood || string.IsNullOrWhiteSpace(result.FoodName))
+                {
+                    throw new Exception("No food detected in the image. Please capture or upload a valid food photo.");
+                }
+
+                return result;
+            }
+            catch (Exception ex) when (ex.Message != "No food detected in the image. Please capture or upload a valid food photo.")
+            {
+                Console.WriteLine($"Gemini Deserialization Error: {ex.Message}");
+                throw new Exception("An error occurred with the system. Please try again later.");
+            }
         }
     }
 

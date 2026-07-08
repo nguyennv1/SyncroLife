@@ -74,8 +74,8 @@ builder.Services.AddAuthentication(options =>
 
 builder.Services.AddControllers();
 
-// CORS: Allow Flutter Web app running on any localhost port (and all origins for development).
-// ⚠️  Restrict origins before deploying to production.
+//Allow Flutter Web app running on any localhost port (and all origins for development).
+//Restrict origins before deploying to production.
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowFlutterWeb", policy =>
@@ -192,6 +192,67 @@ builder.Services.AddOpenApi(options =>
 });
 
 var app = builder.Build();
+
+// Seed default subscription plans
+using (var scope = app.Services.CreateScope())
+{
+    try
+    {
+        var context = scope.ServiceProvider.GetRequiredService<SyncroLife.Data.SyncroLifeDbContext>();
+        
+        var freePlanId = Guid.Parse("8a6c40ca-ef52-4dfb-a977-127c1d66d08b");
+        var freePlan = await context.SubscriptionPlans.FindAsync(freePlanId);
+        if (freePlan == null)
+        {
+            freePlan = new SyncroLife.Models.SubscriptionPlan
+            {
+                PlanId = freePlanId,
+                PlanName = "Free",
+                Description = "Free plan with 3 AI scans per 24 hours",
+                Price = 0,
+                DurationDays = 36500,
+                Features = "3 scans/day",
+                IsActive = true,
+                CreatedAt = DateTime.UtcNow,
+                UpdatedAt = DateTime.UtcNow
+            };
+            await context.SubscriptionPlans.AddAsync(freePlan);
+        }
+
+        var plusPlanId = Guid.Parse("5b7d12f3-ea11-40ef-bc28-98d01cd59e0a");
+        var plusPlan = await context.SubscriptionPlans.FindAsync(plusPlanId);
+        if (plusPlan == null)
+        {
+            plusPlan = new SyncroLife.Models.SubscriptionPlan
+            {
+                PlanId = plusPlanId,
+                PlanName = "Plus",
+                Description = "Plus plan with 20 AI scans per 24 hours",
+                Price = 50000,
+                DurationDays = 30,
+                Features = "20 scans/day",
+                IsActive = true,
+                CreatedAt = DateTime.UtcNow,
+                UpdatedAt = DateTime.UtcNow
+            };
+            await context.SubscriptionPlans.AddAsync(plusPlan);
+        }
+        else
+        {
+            plusPlan.Description = "Plus plan with 20 AI scans per 24 hours";
+            plusPlan.Features = "20 scans/day";
+            plusPlan.Price = 50000;
+            plusPlan.UpdatedAt = DateTime.UtcNow;
+        }
+
+        await context.SaveChangesAsync();
+    }
+    catch (Exception ex)
+    {
+        var logger = scope.ServiceProvider.GetRequiredService<ILogger<Program>>();
+        logger.LogError(ex, "An error occurred while seeding the database subscription plans.");
+    }
+}
 
 
 if (app.Environment.IsDevelopment())

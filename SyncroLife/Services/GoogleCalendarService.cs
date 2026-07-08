@@ -187,6 +187,10 @@ namespace SyncroLife.Services
                 // Check if already exists by GoogleEventId
                 var existing = await _scheduleRepository.GetByGoogleEventIdAsync(userId, ev.Id);
                 string descriptionText = !string.IsNullOrWhiteSpace(ev.Description) ? ev.Description : "No description";
+                if (descriptionText.Length > 500)
+                {
+                    descriptionText = descriptionText.Substring(0, 497) + "...";
+                }
 
                 if (existing != null)
                 {

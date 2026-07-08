@@ -25,4 +25,8 @@ public class UserProfileDTO
     public decimal? MonthlyBudget { get; set; }
 
     public string? Allergies { get; set; }
+
+    public string? SubscriptionType { get; set; }
+
+    public DateTime? SubscriptionExpiry { get; set; }
 }

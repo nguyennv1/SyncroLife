@@ -1,6 +1,7 @@
-﻿using System.Security.Claims;
+using System.Security.Claims;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
 using SyncroLife.DTOs.Recommendation;
 using SyncroLife.Interfaces.Services;
 
@@ -9,6 +10,7 @@ namespace SyncroLife.Controllers
     [Authorize]
     [Route("api/[controller]")]
     [ApiController]
+    [EnableRateLimiting("AiAnalysisPolicy")]
     public class RecommendationController : ControllerBase
     {
         private readonly IRecommendationService _recommendationService;

@@ -78,5 +78,5 @@ public partial class User
 
     public virtual ICollection<UserDietaryPreference> UserDietaryPreferences { get; set; } = new List<UserDietaryPreference>();
 
-    public virtual UserSubscription? UserSubscription { get; set; }
+    public virtual ICollection<UserSubscription> UserSubscriptions { get; set; } = new List<UserSubscription>();
 }

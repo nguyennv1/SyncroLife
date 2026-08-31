@@ -1054,8 +1054,8 @@ public partial class SyncroLifeDbContext : DbContext
                 .OnDelete(DeleteBehavior.ClientSetNull)
                 .HasConstraintName("user_subscription_plan_id_fkey");
 
-            entity.HasOne(d => d.User).WithOne(p => p.UserSubscription)
-                .HasForeignKey<UserSubscription>(d => d.UserId)
+            entity.HasOne(d => d.User).WithMany(p => p.UserSubscriptions)
+                .HasForeignKey(d => d.UserId)
                 .OnDelete(DeleteBehavior.ClientSetNull)
                 .HasConstraintName("user_subscription_user_id_fkey");
         });

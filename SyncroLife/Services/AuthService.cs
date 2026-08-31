@@ -52,38 +52,54 @@ public class AuthService : IAuthService
             throw new Exception("Google OAuth credentials are not configured in appsettings.json.");
         }
 
-        var flow = new GoogleAuthorizationCodeFlow(new GoogleAuthorizationCodeFlow.Initializer
+        GoogleJsonWebSignature.Payload? payload = null;
+        TokenResponse? tokenResponse = null;
+
+        try
         {
-            ClientSecrets = new ClientSecrets
+            payload = await GoogleJsonWebSignature.ValidateAsync(request.ServerAuthCode);
+        }
+        catch
+        {
+            // Not a direct ID token, attempt server authorization code exchange
+        }
+
+        if (payload == null)
+        {
+            var flow = new GoogleAuthorizationCodeFlow(new GoogleAuthorizationCodeFlow.Initializer
             {
-                ClientId = clientId,
-                ClientSecret = clientSecret
+                ClientSecrets = new ClientSecrets
+                {
+                    ClientId = clientId,
+                    ClientSecret = clientSecret
+                }
+            });
+
+            string redirectUri = "postmessage";
+            if (request.RedirectUri != null)
+            {
+                redirectUri = request.RedirectUri;
             }
-        });
+            else if (string.IsNullOrEmpty(request.ClientId))
+            {
+                redirectUri = "";
+            }
 
-        string redirectUri = "postmessage";
-        if (request.RedirectUri != null)
-        {
-            redirectUri = request.RedirectUri;
-        }
-        else if (string.IsNullOrEmpty(request.ClientId))
-        {
-            redirectUri = "";
-        }
+            tokenResponse = await flow.ExchangeCodeForTokenAsync(
+                userId: "user-id-placeholder",
+                code: request.ServerAuthCode,
+                redirectUri: redirectUri,
+                CancellationToken.None
+            );
 
-        TokenResponse tokenResponse = await flow.ExchangeCodeForTokenAsync(
-            userId: "user-id-placeholder",
-            code: request.ServerAuthCode,
-            redirectUri: redirectUri,
-            CancellationToken.None
-        );
+            if (tokenResponse == null || string.IsNullOrEmpty(tokenResponse.IdToken))
+            {
+                throw new Exception("Failed to exchange server auth code for tokens.");
+            }
 
-        if (tokenResponse == null || string.IsNullOrEmpty(tokenResponse.IdToken))
-        {
-            throw new Exception("Failed to exchange server auth code for tokens.");
+            payload = await GoogleJsonWebSignature.ValidateAsync(tokenResponse.IdToken);
         }
 
-        var payload = await GoogleJsonWebSignature.ValidateAsync(tokenResponse.IdToken);
         if (payload == null)
         {
             throw new Exception("Invalid Google identity token.");
@@ -111,9 +127,9 @@ public class AuthService : IAuthService
                 Email = email,
                 FullName = name,
                 GoogleId = googleId,
-                GoogleAccessToken = tokenResponse.AccessToken,
-                GoogleRefreshToken = tokenResponse.RefreshToken,
-                GoogleTokenExpiresAt = DateTime.UtcNow.AddSeconds(tokenResponse.ExpiresInSeconds ?? 3600),
+                GoogleAccessToken = tokenResponse?.AccessToken,
+                GoogleRefreshToken = tokenResponse?.RefreshToken,
+                GoogleTokenExpiresAt = tokenResponse != null ? DateTime.UtcNow.AddSeconds(tokenResponse.ExpiresInSeconds ?? 3600) : null,
                 CreatedAt = DateTime.UtcNow,
                 IsDeleted = false
             };
@@ -122,12 +138,15 @@ public class AuthService : IAuthService
         }
         else
         {
-            user.GoogleAccessToken = tokenResponse.AccessToken;
-            if (!string.IsNullOrEmpty(tokenResponse.RefreshToken))
+            if (tokenResponse != null)
             {
-                user.GoogleRefreshToken = tokenResponse.RefreshToken;
+                user.GoogleAccessToken = tokenResponse.AccessToken;
+                if (!string.IsNullOrEmpty(tokenResponse.RefreshToken))
+                {
+                    user.GoogleRefreshToken = tokenResponse.RefreshToken;
+                }
+                user.GoogleTokenExpiresAt = DateTime.UtcNow.AddSeconds(tokenResponse.ExpiresInSeconds ?? 3600);
             }
-            user.GoogleTokenExpiresAt = DateTime.UtcNow.AddSeconds(tokenResponse.ExpiresInSeconds ?? 3600);
             
             await _authRepository.UpdateUserAsync(user);
         }

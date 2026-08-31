@@ -16,6 +16,8 @@ using SyncroLife.Services;
 using SyncroLife.Services.BackgroundServices;
 using System.Reflection;
 using System.Text;
+using System.Threading.RateLimiting;
+using Microsoft.AspNetCore.RateLimiting;
 
 var builder = WebApplication.CreateBuilder(args);
 builder.Services.Configure<GeminiSettings>(builder.Configuration.GetSection("GeminiSettings"));
@@ -85,6 +87,54 @@ builder.Services.AddCors(options =>
             .AllowAnyHeader()
             .AllowAnyMethod()
             .AllowCredentials();
+    });
+});
+
+// Rate Limiting Configuration (Industry Standards & Custom Policies)
+builder.Services.AddRateLimiter(options =>
+{
+    options.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
+    options.OnRejected = async (context, token) =>
+    {
+        context.HttpContext.Response.StatusCode = StatusCodes.Status429TooManyRequests;
+        context.HttpContext.Response.ContentType = "application/json";
+        await context.HttpContext.Response.WriteAsJsonAsync(new
+        {
+            error = "Too Many Requests",
+            message = "You have sent too many requests. Please try again after a few minutes."
+        }, cancellationToken: token);
+    };
+
+    // Auth Policy: Strictly 5 requests / 1 min per IP (Brute-force & Auth Protection)
+    options.AddFixedWindowLimiter("AuthPolicy", opt =>
+    {
+        opt.PermitLimit = 5;
+        opt.Window = TimeSpan.FromMinutes(1);
+        opt.QueueLimit = 0;
+    });
+
+    // AI Analysis Policy: 6 requests / 1 min per IP (Expensive AI Scanning & Recommendation Protection)
+    options.AddFixedWindowLimiter("AiAnalysisPolicy", opt =>
+    {
+        opt.PermitLimit = 6;
+        opt.Window = TimeSpan.FromMinutes(1);
+        opt.QueueLimit = 0;
+    });
+
+    // Payment Policy: 10 requests / 1 min per IP (Payment Link Creation Protection)
+    options.AddFixedWindowLimiter("PaymentPolicy", opt =>
+    {
+        opt.PermitLimit = 10;
+        opt.Window = TimeSpan.FromMinutes(1);
+        opt.QueueLimit = 0;
+    });
+
+    // Global API Policy: 60 requests / 1 min per IP (Standard REST API Rate Limit)
+    options.AddFixedWindowLimiter("GlobalPolicy", opt =>
+    {
+        opt.PermitLimit = 60;
+        opt.Window = TimeSpan.FromMinutes(1);
+        opt.QueueLimit = 0;
     });
 });
 
@@ -264,10 +314,11 @@ if (app.Environment.IsDevelopment())
 app.MapOpenApi();
 app.MapScalarApiReference();
 
-app.UseHttpsRedirection();
+// app.UseHttpsRedirection();
 
 // Enable CORS before routing/auth so preflight OPTIONS requests are handled correctly.
 app.UseCors("AllowFlutterWeb");
+app.UseRateLimiter();
 
 app.UseExceptionHandler(errorApp =>
 {

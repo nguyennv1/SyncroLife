@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
 using SyncroLife.DTOs.Auth;
 using SyncroLife.Interfaces.Services;
 
@@ -7,6 +8,7 @@ namespace SyncroLife.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
+[EnableRateLimiting("AuthPolicy")]
 public class AuthController : ControllerBase
 {
     private readonly IAuthService _authService;

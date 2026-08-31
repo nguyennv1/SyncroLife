@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.EntityFrameworkCore;
 using SyncroLife.Data;
 using SyncroLife.Models;
@@ -12,6 +13,7 @@ namespace SyncroLife.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
+    [EnableRateLimiting("PaymentPolicy")]
     public class PaymentController : ControllerBase
     {
         private readonly SyncroLifeDbContext _context;
@@ -64,6 +66,27 @@ namespace SyncroLife.Controllers
             if (user == null)
             {
                 return BadRequest("User not found.");
+            }
+
+            // Clean up any existing pending subscriptions and payments for this user to avoid orphaned duplicates
+            var oldPendingSubs = await _context.UserSubscriptions
+                .Include(s => s.Payments)
+                .Where(s => s.UserId == userId && s.Status == "pending")
+                .ToListAsync();
+
+            foreach (var sub in oldPendingSubs)
+            {
+                sub.Status = "cancelled";
+                sub.UpdatedAt = DateTime.UtcNow;
+                foreach (var p in sub.Payments)
+                {
+                    if (p.Status == "pending")
+                    {
+                        p.Status = "failed";
+                        p.ErrorMessage = "Superceded by new payment request.";
+                        p.UpdatedAt = DateTime.UtcNow;
+                    }
+                }
             }
 
             // Generate unique numeric order code (32-bit safe: 7 digits of timestamp in seconds + 2 random digits)
@@ -138,11 +161,18 @@ namespace SyncroLife.Controllers
                 string cancelUrl = $"{scheme}://{host}{pathBase}/api/Payment/mock-checkout?userId={userId}&planId={plan.PlanId}&orderCode={orderCode}&status=cancelled";
 
                 // Create CreatePaymentLinkRequest object for SDK
+                // NOTE: Description must be alphanumeric and <= 25 chars for PayOS bank transfer auto-matching
+                string cleanDescription = $"Thanh toan {plan.PlanName}";
+                if (cleanDescription.Length > 25)
+                {
+                    cleanDescription = cleanDescription.Substring(0, 25);
+                }
+
                 var paymentData = new CreatePaymentLinkRequest
                 {
                     OrderCode = orderCode,
                     Amount = (int)plan.Price,
-                    Description = $"Goi {plan.PlanName} - SyncroLife",
+                    Description = cleanDescription,
                     Items = new List<PaymentLinkItem> { 
                         new PaymentLinkItem {
                             Name = plan.PlanName,
@@ -195,7 +225,10 @@ namespace SyncroLife.Controllers
 
                 if (payment != null)
                 {
-                    if (webhookBody.Code == "00") // PayOS Success code
+                    string statusCode = webhookBody.Code ?? verifiedData.Code ?? string.Empty;
+                    bool isPaid = statusCode == "00";
+
+                    if (isPaid) // PayOS Success
                     {
                         payment.Status = "success";
                         payment.PaymentDate = DateTime.UtcNow;
@@ -259,6 +292,16 @@ namespace SyncroLife.Controllers
 
             if (pendingPayment == null)
             {
+                // Check if user has an active subscription or recent successful payment
+                var activeSub = await _context.UserSubscriptions
+                    .Include(us => us.Plan)
+                    .FirstOrDefaultAsync(us => us.UserId == userId && us.Status == "active");
+
+                if (activeSub != null && activeSub.Plan != null && activeSub.Plan.PlanName.Equals("Plus", StringComparison.OrdinalIgnoreCase))
+                {
+                    return Ok(new { status = "success", plan = activeSub.Plan.PlanName });
+                }
+
                 var latestPayment = await _context.Payments
                     .Include(p => p.UserSub)
                         .ThenInclude(us => us.Plan)
@@ -285,8 +328,9 @@ namespace SyncroLife.Controllers
                 long orderCode = long.Parse(pendingPayment.TransactionId ?? "0");
 
                 var paymentInfo = await payOS.PaymentRequests.GetAsync(orderCode);
+                string payosStatus = paymentInfo.Status.ToString().ToUpperInvariant();
 
-                if (paymentInfo.Status.ToString() == "PAID")
+                if (payosStatus == "PAID")
                 {
                     pendingPayment.Status = "success";
                     pendingPayment.PaymentDate = DateTime.UtcNow;
@@ -312,7 +356,7 @@ namespace SyncroLife.Controllers
                     await _context.SaveChangesAsync();
                     return Ok(new { status = "success", plan = pendingPayment.UserSub.Plan?.PlanName ?? "Plus" });
                 }
-                else if (paymentInfo.Status.ToString() == "CANCELLED" || paymentInfo.Status.ToString() == "EXPIRED")
+                else if (payosStatus == "CANCELLED" || payosStatus == "EXPIRED")
                 {
                     pendingPayment.Status = "failed";
                     pendingPayment.UpdatedAt = DateTime.UtcNow;
@@ -328,7 +372,8 @@ namespace SyncroLife.Controllers
             }
             catch (Exception ex)
             {
-                return BadRequest(new { message = "Error syncing with PayOS: " + ex.Message });
+                Console.WriteLine("PayOS status sync error: " + ex.Message);
+                return Ok(new { status = "pending" });
             }
         }
 

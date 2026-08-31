@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
 using SyncroLife.Interfaces.Services;
 using System.Security.Claims;
 
@@ -8,6 +9,7 @@ namespace SyncroLife.Controllers;
 [Route("api/[controller]")]
 [ApiController]
 [Authorize]
+[EnableRateLimiting("AiAnalysisPolicy")]
 public class FoodAnalysisController : ControllerBase
 {
     private readonly IFoodAnalysisService _foodAnalysisService;
